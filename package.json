@@ -1,0 +1,13 @@
+{
+  "name": "mensagio-chat-live",
+  "version": "1.0.0",
+  "description": "Chat ao Vivo - Mensagio Tecnologia (minicurso)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "socket.io": "^4.8.0"
+  }
+}
