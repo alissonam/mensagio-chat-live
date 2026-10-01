@@ -11,8 +11,11 @@ const messageInput = document.getElementById("message-input");
 const sendButton = document.getElementById("send-button");
 const connectionStatus = document.getElementById("connection-status");
 const statusText = document.getElementById("status-text");
+const emojiButton = document.getElementById("emoji-button");
+const emojiPanel = document.getElementById("emoji-panel");
 
 let currentUser = null;
+const likedByMe = new Set();
 
 // Atualiza a interface quando a conexão com o servidor é estabelecida.
 socket.on("connect", () => {
@@ -32,8 +35,22 @@ socket.on("message", (data) => {
     data.user,
     data.text,
     data.time,
-    data.user === currentUser
+    data.user === currentUser,
+    data.id
   );
+});
+
+// Recebe o total de curtidas de uma mensagem, definido pelo servidor.
+socket.on("like", (data) => {
+  if (data.by === socket.id) {
+    if (data.liked) {
+      likedByMe.add(data.id);
+    } else {
+      likedByMe.delete(data.id);
+    }
+  }
+
+  updateLikeButton(data.id, data.count);
 });
 
 function formatTime() {
@@ -51,16 +68,29 @@ function escapeText(text) {
 }
 
 // Cria a mensagem e mantém a lista posicionada na mensagem mais recente.
-function addMessage(user, text, time, isOwnMessage) {
+function addMessage(user, text, time, isOwnMessage, id) {
   const messageElement = document.createElement("div");
   messageElement.className = `message ${isOwnMessage ? "own" : "other"}`;
 
   messageElement.innerHTML =
     `<div class="info">${escapeText(user)} • ${escapeText(time)}</div>` +
-    `<div>${escapeText(text)}</div>`;
+    `<div>${escapeText(text)}</div>` +
+    `<button class="like-button" data-id="${id}">🤍</button>`;
 
   messageList.appendChild(messageElement);
   messageList.scrollTop = messageList.scrollHeight;
+}
+
+// Atualiza o ícone e o contador de curtidas de uma mensagem.
+function updateLikeButton(id, count) {
+  const button = messageList.querySelector(`.like-button[data-id="${id}"]`);
+
+  if (!button) {
+    return;
+  }
+
+  const icon = likedByMe.has(id) ? "❤️" : "🤍";
+  button.textContent = count > 0 ? `${icon} ${count}` : icon;
 }
 
 function enterChat() {
@@ -96,12 +126,35 @@ function sendMessage() {
   socket.emit("message", data);
 
   messageInput.value = "";
+  emojiPanel.classList.add("hidden");
   messageInput.focus();
 }
 
 enterButton.addEventListener("click", enterChat);
 sendButton.addEventListener("click", sendMessage);
 logoutButton.addEventListener("click", () => location.reload());
+
+// Mostra ou esconde o painel de emojis.
+emojiButton.addEventListener("click", () => {
+  emojiPanel.classList.toggle("hidden");
+});
+
+// Insere o emoji clicado no campo de mensagem.
+emojiPanel.addEventListener("click", (event) => {
+  if (event.target.tagName === "SPAN") {
+    messageInput.value += event.target.textContent;
+    messageInput.focus();
+  }
+});
+
+// Envia ao servidor o pedido de curtir/descurtir uma mensagem.
+messageList.addEventListener("click", (event) => {
+  const button = event.target.closest(".like-button");
+
+  if (button) {
+    socket.emit("like", Number(button.dataset.id));
+  }
+});
 
 nameInput.addEventListener("keypress", (event) => {
   if (event.key === "Enter") {

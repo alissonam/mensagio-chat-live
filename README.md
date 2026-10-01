@@ -13,6 +13,12 @@ npm start
 
 Acesse: http://localhost:3000
 
+## Funcionalidades
+
+- Mensagens em tempo real para todos os participantes.
+- Emojis: painel de emojis para inserir na mensagem.
+- Curtidas: o contador é sincronizado entre todos via Socket.io (evento `like`).
+
 ## Expor para a sala (ngrok)
 
 ```bash
